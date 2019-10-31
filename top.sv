@@ -16,13 +16,18 @@ module top();
     //AxiAgentSlave   agent_slv;
     //AxiAgentMonitor agent_mnt;
     //AxiDriverMaster driver_mst;
-
+    AxiTransaction trans;
     AxiInterface axi_if();
     AxiConfig   cfg;
     AxiVip      vip;
 
+    reg [7:0] a;
+    wire [7:0] b;
+
+    assign b = {{0{1'b0}},a};
 
     //AxiInterface    axi_if();
+
 
 
 
@@ -30,7 +35,33 @@ module top();
         cfg = new();
         vip = new(cfg);
         vip.axi_if = axi_if;
+        trans = vip.create_trans();
 
+        a = 255;
+        $display("%d",b);
+        
+        a = 1;
+        $display("%d",b);
+        
+
+
+        assert(trans.randomize());
+        $display("%d",trans.burst_length);
+        $display("%d",trans.addr);
+        $display("%d",trans.up_boundary);
+        $display("%d",trans.data_length);
+
+        assert(trans.randomize());
+        $display("%d",trans.burst_length);
+        $display("%d",trans.addr);
+        $display("%d",trans.up_boundary);
+        $display("%d",trans.data_length);
+
+        assert(trans.randomize());
+        $display("%d",trans.burst_length);
+        $display("%d",trans.addr);
+        $display("%d",trans.up_boundary);
+        $display("%d",trans.data_length);
     end
 
 

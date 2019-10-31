@@ -8,11 +8,11 @@
 class AxiAgentMonitor;
 
     AxiDriverMonitor monitor;
-    AxiTransFactory  factory;
+    //AxiTransFactory  factory;
 
     function new(AxiConfig cfg,virtual AxiInterfaceUnit vif);
         monitor = new(cfg,vif.monitor);
-        factory = new(cfg);
+    //    factory = new(cfg);
     endfunction
 
     function set_config(AxiConfig cfg);
@@ -23,9 +23,9 @@ class AxiAgentMonitor;
         monitor.run();
     endtask
 
-    function AxiTransaction create();
-        create = factory.create();
-    endfunction
+    //function AxiTransaction create();
+    //    create = factory.create();
+    //endfunction
 
 endclass:AxiAgentMonitor
 

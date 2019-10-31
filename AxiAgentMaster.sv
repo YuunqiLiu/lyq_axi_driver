@@ -41,9 +41,9 @@ class AxiAgentMaster;
         monitor.run();
     endtask
 
-    function AxiTransaction create();
-        create = factory.create();
-    endfunction
+    //function AxiTransaction create();
+    //    create = factory.create();
+    //endfunction
 
 
 endclass:AxiAgentMaster

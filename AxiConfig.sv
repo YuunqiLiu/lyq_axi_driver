@@ -13,10 +13,12 @@ class AxiConfig;
 
 
     //AXI interface param config
-    int id_width    = 1;
+    int strb_always_enable = 1;
+
+    int id_width    = 4;
     int data_width  = 32;
     int addr_width  = 32;
-    int burst_lenth_limit = 16;
+    int burst_length_limit = 16;
 
     int arlen_width = 4;
     int awlen_width = 4;
@@ -44,11 +46,11 @@ class AxiConfig;
         rdata_width = data_width;
         wstrb_width = wdata_width/8;
 
-        if (burst_lenth_limit > 256) begin
+        if (burst_length_limit > 256) begin
             $display("error");
             $finish; 
         end
-        else if (burst_lenth_limit <= 16) begin
+        else if (burst_length_limit <= 16) begin
             arlen_width = 4;
             awlen_width = 4;
         end

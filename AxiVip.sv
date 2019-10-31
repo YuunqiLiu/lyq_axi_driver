@@ -48,7 +48,7 @@ class AxiVip;
         this.cfg = cfg;
     endfunction
 
-    function create_trans();
+    function AxiTransaction create_trans();
         AxiTransaction trans;
         trans = new(cfg);
         create_trans = trans;
