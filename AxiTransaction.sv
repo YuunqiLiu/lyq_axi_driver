@@ -7,22 +7,23 @@
 
 class AxiTransaction;
 
-    AxiConfig       cfg;
-    rand int        id;
-    rand bit [63:0] addr;
-    rand longint    up_boundary;
-    rand bit [7:0]  burst_length;
-    rand bit [2:0]  burst_size;
-    rand int        lock;//how to define
-    rand bit [2:0]  prot;
-    rand bit [3:0]  qos;
-    rand bit [3:0]  region;
-    rand int        user;
+    AxiConfig        cfg;
+    rand int         id;
+    rand bit [63:0]  addr;
+    rand bit [63:0]  up_boundary;
+    rand bit [7:0]   burst_length;
+    rand bit [2:0]   burst_size;
+    rand bit         lock;
+    rand bit [2:0]   prot;
+    rand bit [3:0]   qos;
+    rand bit [3:0]   region;
+    //rand bit [127:0] auser;
 
-    rand bit [11:0] data_length;
-    rand bit [7:0]  data[];
-    rand bit        strb[];
-
+    rand bit [11:0]  data_length;
+    rand bit [7:0]   data[];
+    rand bit         strb[];
+    //rand bit [127:0] user;
+ 
     function new(AxiConfig cfg);
         this.cfg = cfg;
     endfunction
