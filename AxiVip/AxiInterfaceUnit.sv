@@ -19,18 +19,23 @@ interface AxiInterfaceUnit();
     logic [1:0]                         awlock;
     logic [3:0]                         awcache;
     logic [2:0]                         awprot;
+    logic [3:0]                         awqos;
+    logic [3:0]                         awregion;
+    logic [`AXI_IF_AWUSER_WIDTH-1:0]    awuser;
     logic                               awvalid;
     logic                               awready;
 
     logic [`AXI_IF_WID_WIDTH-1:0]       wid;
     logic [`AXI_IF_WDATA_WIDTH-1:0]     wdata;
     logic [`AXI_IF_WSTRB_WIDTH-1:0]     wstrb;
+    logic [`AXI_IF_WUSER_WIDTH-1:0]     wuser;
     logic                               wlast;
     logic                               wvalid;
     logic                               wready;
 
     logic [`AXI_IF_BID_WIDTH-1:0]       bid;
     logic [1:0]                         bresp;
+    logic [`AXI_IF_BUSER_WIDTH-1:0]     buser;
     logic                               bvalid;
     logic                               bready;
 
@@ -42,12 +47,16 @@ interface AxiInterfaceUnit();
     logic [1:0]                         arlock;
     logic [3:0]                         arcache;
     logic [2:0]                         arprot;
+    logic [3:0]                         arqos;
+    logic [3:0]                         arregion;
+    logic [`AXI_IF_ARUSER_WIDTH-1:0]    aruser;
     logic                               arvalid;
     logic                               arready;
 
     logic [`AXI_IF_RID_WIDTH-1:0]       rid;
     logic [`AXI_IF_RDATA_WIDTH-1:0]     rdata;
     logic [1:0]                         rresp;
+    logic [`AXI_IF_RUSER_WIDTH-1:0]     ruser;
     logic                               rlast;
     logic                               rvalid;
     logic                               rready;
@@ -66,6 +75,9 @@ interface AxiInterfaceUnit();
         output awlock,
         output awcache,
         output awprot,
+        output awqos,
+        output awregion,
+        output awuser,
         output awvalid,
         input  awready,
 
@@ -73,11 +85,13 @@ interface AxiInterfaceUnit();
         output wdata,
         output wstrb,
         output wlast,
+        output wuser,
         output wvalid,
         input  wready,
 
         input  bid,
         input  bresp,
+        input  buser,
         input  bvalid,
         output bready,
 
@@ -89,12 +103,16 @@ interface AxiInterfaceUnit();
         output arlock,
         output arcache,
         output arprot,
+        output arqos,
+        output arregion,
+        output aruser,
         output arvalid,
         input  arready,
 
         input  rid,
         input  rdata,
         input  rresp,
+        input  ruser,
         input  rlast,
         input  rvalid,
         output rready
@@ -112,18 +130,23 @@ interface AxiInterfaceUnit();
         input  awlock,
         input  awcache,
         input  awprot,
+        input  awqos,
+        input  awregion,
+        input  awuser,
         input  awvalid,
         output awready,
 
         input  wid,
         input  wdata,
         input  wstrb,
+        input  wuser,
         input  wlast,
         input  wvalid,
         output wready,
 
         output bid,
         output bresp,
+        output buser,
         output bvalid,
         input  bready,
 
@@ -135,12 +158,16 @@ interface AxiInterfaceUnit();
         input  arlock,
         input  arcache,
         input  arprot,
+        input  arqos,
+        input  arregion,
+        input  aruser,
         input  arvalid,
         output arready,
 
         output rid,
         output rdata,
         output rresp,
+        output ruser,
         output rlast,
         output rvalid,
         input  rready
@@ -158,18 +185,23 @@ interface AxiInterfaceUnit();
         input awlock,
         input awcache,
         input awprot,
+        input awqos,
+        input awregion,
+        input awuser,
         input awvalid,
         input awready,
 
         input wid,
         input wdata,
         input wstrb,
+        input wuser,
         input wlast,
         input wvalid,
         input wready,
 
         input bid,
         input bresp,
+        input buser,
         input bvalid,
         input bready,
 
@@ -181,12 +213,16 @@ interface AxiInterfaceUnit();
         input arlock,
         input arcache,
         input arprot,
+        input arqos,
+        input arregion,
+        input aruser,
         input arvalid,
         input arready,
 
         input rid,
         input rdata,
         input rresp,
+        input ruser,
         input rlast,
         input rvalid,
         input rready

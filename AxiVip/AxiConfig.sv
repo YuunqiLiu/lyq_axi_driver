@@ -4,6 +4,8 @@ class AxiConfig;
 
     typedef enum bit {READ,WRITE} xact_type_e;
 
+    int axi_driver_debug_enable = 1;
+
     //instance num config
     int master_num  = 1;
     int slave_num   = 1;
@@ -12,13 +14,16 @@ class AxiConfig;
     //AXI ip spec
     int driver_master_write_otd_depth = 1;
     int driver_master_read_otd_depth = 1;
+    int driver_master_recv_fifo_depth = 1;
     int driver_master_send_fifo_depth = 1;
-    int driver_master_recv_fifo_depth = 1; 
-    int driver_slave_fifo_num = 1;
+
+    int driver_slave_write_otd_depth = 1;
+    int driver_slave_read_otd_depth = 1;
+    int driver_slave_recv_fifo_depth = 1;
+    int driver_slave_send_fifo_depth = 1;
 
 
     //AXI interface param config
-    int xact_type = WRITE;
     int strb_always_enable = 1;
 
     int id_width    = 4;
@@ -38,6 +43,7 @@ class AxiConfig;
 
     int wdata_width = data_width;
     int rdata_width = data_width;
+    int strb_width = data_width/8;
     int wstrb_width = wdata_width/8;
     
     function cfg_expand();

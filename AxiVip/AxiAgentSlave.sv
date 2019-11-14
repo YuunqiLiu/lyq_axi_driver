@@ -25,6 +25,7 @@
 
 class AxiAgentSlave;
 
+    AxiConfig cfg;
     AxiDriverSlave  slave;
     AxiDriverMonitor monitor;
     //AxiTransFactory  factory;   
@@ -32,8 +33,27 @@ class AxiAgentSlave;
     function new(AxiConfig cfg,virtual AxiInterfaceUnit vif);
         slave   = new(cfg,vif.slave);
         monitor = new(cfg,vif.monitor);
+        this.cfg = cfg;
     //    factory = new(cfg);
     endfunction
+
+    function AxiTransaction create_trans();
+        AxiTransaction trans;
+        trans = new(cfg);
+        create_trans = trans;
+    endfunction
+
+    task send_trans(input AxiTransaction trans);
+        slave.send_trans(trans);
+    endtask
+
+    task recv_write_trans(output AxiTransaction trans);
+        slave.recv_write_trans(trans);
+    endtask
+
+    task recv_read_trans(output AxiTransaction trans);
+        slave.recv_read_trans(trans);
+    endtask
 
     function set_config(AxiConfig cfg);
         slave.set_config(cfg);

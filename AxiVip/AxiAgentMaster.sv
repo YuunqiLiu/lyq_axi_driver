@@ -22,6 +22,7 @@
 
 class AxiAgentMaster;
 
+    AxiConfig       cfg;
     AxiDriverMaster  master;
     AxiDriverMonitor monitor;
     virtual AxiInterfaceUnit vif;
@@ -29,6 +30,13 @@ class AxiAgentMaster;
     function new(AxiConfig cfg,virtual AxiInterfaceUnit vif);
         master = new (cfg,vif.master);
         monitor = new(cfg,vif.monitor);
+        this.cfg = cfg;
+    endfunction
+
+    function AxiTransaction create_trans();
+        AxiTransaction trans;
+        trans = new(cfg);
+        create_trans = trans;
     endfunction
 
     function set_config(AxiConfig cfg);
@@ -39,6 +47,18 @@ class AxiAgentMaster;
     task run();
         master.run();
         monitor.run();
+    endtask
+
+    task send_trans(input AxiTransaction trans);
+        master.send_trans(trans);
+    endtask
+
+    task recv_read_trans(output AxiTransaction trans);
+        master.recv_read_trans(trans);
+    endtask
+
+    task recv_write_trans(output AxiTransaction trans);
+        master.recv_write_trans(trans);
     endtask
 
     //function AxiTransaction create();

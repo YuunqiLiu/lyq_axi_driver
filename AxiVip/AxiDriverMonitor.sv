@@ -24,6 +24,12 @@ class AxiDriverMonitor;
         this.mbx = new(1);
     endfunction
 
+    function AxiTransaction create_trans();
+        AxiTransaction trans;
+        trans = new(cfg);
+        create_trans = trans;
+    endfunction
+
     function set_config(AxiConfig cfg);
         this.cfg = cfg;
     endfunction
