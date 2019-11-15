@@ -12,6 +12,12 @@ class AxiConfig;
     int monitor_num = 1;
 
     //AXI ip spec
+    int driver_master_write_otd_total        = 10;
+    int driver_master_write_otd_trans_per_id = 10;
+    int driver_master_write_otd_id_num       = 10;
+
+
+
     int driver_master_write_otd_depth = 1;
     int driver_master_read_otd_depth = 1;
     int driver_master_recv_fifo_depth = 1;

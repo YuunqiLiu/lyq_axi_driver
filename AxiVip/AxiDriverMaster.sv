@@ -16,29 +16,54 @@
     `include "RichMailbox.sv"
 `endif
 
+`ifndef AXITRANSMAILBOXIBK
+    `define AXITRANSMAILBOXIBK
+    `include "AxiTransMailboxIBK.sv"
+`endif
+
+`ifndef AXICONFIGDEFINE
+    `define AXICONFIGDEFINE
+    `include "AxiConfigDefine.sv"
+`endif
+
+`ifndef AXIOTDMESSAGE
+    `define AXIOTDMESSAGE
+    `include "AxiOtdMessage.sv"
+`endif
+
 class AxiRChannelDataPack;
 
-    bit [7:0]       data[4095:0];
-    bit [127:0]     user[255:0];
+    bit [`AXI_IF_ID_WIDTH-1:0]      id;
+    bit [7:0]                       data[4095:0];
+    bit [`AXI_IF_USER_WIDTH-1:0]    user[255:0];
 
 endclass
 
+class AxiBChannelDataPack;
+
+    bit [`AXI_IF_ID_WIDTH-1:0]      id;
+    bit [1:0]                       resp;
+    bit [`AXI_IF_USER_WIDTH-1:0]    user;
+
+endclass
 
 class AxiDriverMaster;
 
     AxiConfig                       cfg;
     AxiTransaction                  trans;
-    RichMailbox                     mbx_aw,mbx_w,mbx_ar,mbx_r,mbx_b,mbx_otdw,mbx_otdr;
+    AxiOtdMessage                   otdmsg_w,otdmsg_r;
+    AxiTransMailboxIBK              mbxibid_waitb,mbxibid_waitr;
+    RichMailbox                     mbx_p1b;//Type AxiBChannelDataPack
+    RichMailbox                     mbx_p1r;//Type AxiRChannelDataPack
+    RichMailbox                     mbx_aw,mbx_w,mbx_ar,mbx_r,mbx_b,mbx_otdw,mbx_otdr;//Type AxiTransaction
     virtual AxiInterfaceUnit.master vif;
 
-    function new(AxiConfig cfg,virtual AxiInterfaceUnit.master vif);
+    function new(input AxiConfig cfg,virtual AxiInterfaceUnit.master vif);
         this.vif = vif;
         set_config(cfg);
     endfunction
 
-
-
-    function set_config(AxiConfig cfg);
+    function set_config(input AxiConfig cfg);
         this.cfg = cfg;
         this.mbx_aw = new(cfg.driver_master_send_fifo_depth);
         this.mbx_ar = new(cfg.driver_master_send_fifo_depth);
@@ -47,75 +72,55 @@ class AxiDriverMaster;
         this.mbx_b  = new(cfg.driver_master_recv_fifo_depth);
         this.mbx_otdr = new(cfg.driver_master_read_otd_depth);
         this.mbx_otdw = new(cfg.driver_master_write_otd_depth);
+        this.mbx_p1b = new(1);
+        this.mbx_p1r = new(1);
+        this.otdmsg_r = new(cfg);
+        this.otdmsg_w = new(cfg);
+        this.mbxibid_waitb = new;
+        this.mbxibid_waitr = new;
     endfunction
 
-    task send_trans(AxiTransaction trans);
-        AxiTransaction trans_aw,trans_w,trans_ar,trans_otdw,trans_otdr;
-        if(trans.xact_type == AxiTransaction::WRITE) begin
-            //if(cfg.axi_driver_debug_enable) $display("AxiDriverMaster: get a WRITE transaction.");
-            trans_aw    = new trans;
-            trans_w     = new trans;
-            trans_otdw  = new trans;
-            //$cast(trans_aw,trans.clone());
-            //$cast(trans_w,trans.clone());
-            //$cast(trans_otdw,trans.clone());
-            mbx_aw.put(trans_aw);
-            mbx_w.put(trans_w);
-            mbx_otdw.put(trans_otdw);
-        end
-        else begin
-            //if(cfg.axi_driver_debug_enable) $display("AxiDriverMaster: get a READ transaction.");
-            trans_ar    = new trans;
-            trans_otdr  = new trans;
-            //trans_r  = new trans;
-            //$cast(trans_ar,trans.clone());
-            //$cast(trans_otdr,trans.clone());
-            mbx_ar.put(trans_ar);
-            mbx_otdr.put(trans_otdr);
-            //if(cfg.axi_driver_debug_enable) $display("AxiDriverMaster: mbx_ar get a new trans with num %d.",mbx_ar.num());
-            
-        end
+    task initialize();
+        //mbx = new(1);
     endtask
 
-    task read_merge(input AxiTransaction trans_in,input AxiRChannelDataPack pack,output AxiTransaction trans_out);
-        int                 start_point,offset;
-        int                 data_length;
-        
-        
-        trans_out = trans_in;
-
-        offset = trans_out.addr % (2**trans_out.size);
-        start_point = offset;
-        data_length = (trans_out.len+1)*cfg.strb_width-offset;
-
-        trans_out.data_length = data_length;
-        trans_out.data = new[data_length];
-        trans_out.strb = new[data_length];
-        trans_out.user = new[trans_out.len+1];
-        for(int i=0;i<data_length;i=i+1) begin
-            trans_out.data[i] = pack.data[offset+i];
-            trans_out.strb[i] = 1'b1;
-            //$display("ptr %d and s+j %d with data %h",i,offset+i,pack.data[offset+i]);
-        end
-        for(int i=0;i<=trans_out.len;i+=1) begin
-            trans_out.user[i] = pack.user[i];
-        end
-
+    task send_trans(input AxiTransaction trans);
+        if(trans.xact_type == AxiTransaction::WRITE) send_write_trans(trans);
+        else                                         send_read_trans(trans);
+    endtask
+    
+    task send_read_trans(input AxiTransaction trans);
+        AxiTransaction trans_ar,trans_waitr;
+        if(trans.xact_type != AxiTransaction::READ) $finish;
+        trans.copy_to(trans_ar);
+        trans.copy_to(trans_waitr);
+        otdmsg_r.put(trans.id);
+        mbx_ar.put(trans_ar);
+        mbxibid_waitr.put(trans_waitr,trans_waitr.id);
     endtask
 
-
+    task send_write_trans(input AxiTransaction trans);
+        AxiTransaction trans_aw,trans_w,trans_waitb;
+        if(trans.xact_type != AxiTransaction::WRITE) $finish;
+        trans.copy_to(trans_aw);
+        trans.copy_to(trans_w);
+        trans.copy_to(trans_waitb);
+        otdmsg_w.put(trans.id);
+        mbx_aw.put(trans_aw);
+        mbx_w.put(trans_w);
+        mbxibid_waitb.put(trans_waitb,trans_waitb.id);
+    endtask
 
     task recv_read_trans(output AxiTransaction trans);
         mbx_r.get(trans);
+        if(!otdmsg_r.exists(trans.id)) $finish;
+        otdmsg_r.get(trans.id);
     endtask
 
     task recv_write_trans(output AxiTransaction trans);
         mbx_b.get(trans);
-    endtask
-
-
-    task initialize();
-        //mbx = new(1);
+        if(!otdmsg_w.exists(trans.id)) $finish;
+        otdmsg_w.get(trans.id);
     endtask
     
     task run();
@@ -128,89 +133,10 @@ class AxiDriverMaster;
             send_ar();
             recv_b();
             recv_r();
+            process_b();
+            process_r();
         join_none
     endtask
-
-    task recv_b();
-        AxiTransaction trans;
-        bit tmp;
-        fork
-        if(cfg.axi_driver_debug_enable) $display("AxiDriverMaster: recv_b run.");
-        forever begin
-            if(!mbx_otdw.empty()) begin
-                vif.bready <= 1'b1;
-                tmp = vif.bvalid;
-                do @vif.aclk; while(!(vif.bvalid && vif.bready));
-                mbx_otdw.get(trans);
-                trans.resp[0] = vif.bresp;
-                mbx_b.put(trans);
-            end
-            else begin
-                vif.bready <= 1'b0;
-                @vif.aclk;
-            end
-        end
-        join_none
-    endtask
-
-    task recv_r();
-        AxiTransaction      trans_recv,trans_send;
-        AxiRChannelDataPack pack;
-        bit [127:0][7:0]    data;
-        bit [127:0]         user_copy[255:0];
-        int                 byte_ptr,hdsk_ptr;
-        fork
-        forever begin
-            if( (!mbx_r.full()) && (!mbx_otdr.empty()) ) begin
-                byte_ptr = 0;
-                hdsk_ptr = 0;
-                pack = new();
-                do begin
-                    vif.rready <= 1'b1;
-                    do @vif.aclk; while(!(vif.rvalid && vif.rready));
-                    //Data read
-                    data = vif.rdata;
-                    for(int i=0;i<cfg.strb_width;i=i+1) begin
-                        pack.data[byte_ptr] = data[i];
-                        //$display("%d",data[i]);
-                        byte_ptr += 1;
-                    end
-                    pack.user[hdsk_ptr] = vif.ruser;
-
-                    hdsk_ptr += 1;
-                end while(!(vif.rlast && vif.rvalid && vif.rready));
-                //$display("recv_r put result to mbx");
-                
-                mbx_otdr.get(trans_recv);
-                read_merge(trans_recv,pack,trans_send);
-                mbx_r.put(trans_send);
-                //mbx_r.put(pack);
-            end
-            else begin
-                vif.rready <= 0;
-                @vif.aclk;
-            end
-        end
-        join_none
-
-        //AxiTransaction trans;
-        //for
-        //forever begin
-        //    if(mbx_otdr.num()!=0) begin
-        //        vif.rready <= 1;
-        //        do @vif.aclk; while(!(vif.rvalid && vif.rready));
-        //        mbx_otdr.get(trans);
-        //        trans.resp = vif.rresp;
-        //        mbx_r.put(trans);
-        //    end 
-        //    else begin
-        //        vif.rready <= 0;
-        //        @vif.aclk;
-        //    end
-        //end
-        //join_none
-    endtask
-
 
     task send_aw();
         AxiTransaction trans;
@@ -341,6 +267,143 @@ class AxiDriverMaster;
         join_none
     endtask
 
+    task recv_b();
+        AxiBChannelDataPack pack;
+        fork
+        if(cfg.axi_driver_debug_enable) $display("AxiDriverMaster: recv_b run.");
+        forever begin
+            if(!mbx_p1b.full()) begin
+                pack = new;
+                vif.bready <= 1'b1;
+                do @vif.aclk; while(!(vif.bvalid && vif.bready));
+                pack.resp = vif.bresp;
+                pack.user = vif.buser;
+                pack.id   = vif.bid;
+                mbx_p1b.put(pack);
+            end
+            else begin
+                vif.bready <= 1'b0;
+                @vif.aclk;
+            end
+        end
+        join_none
+    endtask
+
+    task recv_r();
+        AxiRChannelDataPack pack;
+        bit [127:0][7:0]    data;
+        bit [127:0]         user_copy[255:0];
+        int                 byte_ptr,hdsk_ptr;
+        fork
+        forever begin
+            if( (!mbx_p1r.full())) begin
+                byte_ptr = 0;
+                hdsk_ptr = 0;
+                pack = new();
+                do begin
+                    vif.rready <= 1'b1;
+                    do @vif.aclk; while(!(vif.rvalid && vif.rready));
+                    //Data read
+                    data = vif.rdata;
+                    for(int i=0;i<cfg.strb_width;i=i+1) begin
+                        pack.data[byte_ptr] = data[i];
+                        //$display("%d",data[i]);
+                        byte_ptr += 1;
+                    end
+                    pack.user[hdsk_ptr] = vif.ruser;
+                    pack.id             = vif.rid;
+
+                    hdsk_ptr += 1;
+                end while(!(vif.rlast && vif.rvalid && vif.rready));
+                //$display("recv_r put result to mbx");
+                //read_merge(trans_recv,pack,trans_send);
+                mbx_p1r.put(pack);
+                //mbx_r.put(pack);
+            end
+            else begin
+                vif.rready <= 0;
+                @vif.aclk;
+            end
+        end
+        join_none
+
+        //AxiTransaction trans;
+        //for
+        //forever begin
+        //    if(mbx_otdr.num()!=0) begin
+        //        vif.rready <= 1;
+        //        do @vif.aclk; while(!(vif.rvalid && vif.rready));
+        //        mbx_otdr.get(trans);
+        //        trans.resp = vif.rresp;
+        //        mbx_r.put(trans);
+        //    end 
+        //    else begin
+        //        vif.rready <= 0;
+        //        @vif.aclk;
+        //    end
+        //end
+        //join_none
+    endtask
+
+    task process_b();
+        AxiTransaction trans;
+        AxiBChannelDataPack pack;
+        fork 
+        forever begin
+            //merge b
+            mbx_p1b.peek(pack);
+            if(mbxibid_waitb.empty(pack.id)) $finish;
+            mbxibid_waitb.get(trans,pack.id);
+            trans.buser   = pack.user;
+            trans.resp[0] = pack.resp;
+
+            //repo b
+            mbx_b.put(trans);
+            //otdmsg_w.get(trans.id);
+            mbx_p1b.get(pack);
+        end
+        join_none
+    endtask
+
+    task process_r();
+        AxiRChannelDataPack pack;
+        AxiTransaction      trans;
+        int                 start_point,offset;
+        int                 data_length;
+        
+        fork
+        forever begin
+            //merge_r
+            mbx_p1r.peek(pack);
+
+            if(mbxibid_waitr.empty(pack.id)) $finish;
+            mbxibid_waitr.get(trans,pack.id);
+
+            offset = trans.addr % (2**trans.size);
+            start_point = offset;
+            data_length = (trans.len+1)*cfg.strb_width-offset;
+
+            trans.data_length = data_length;
+            trans.data = new[data_length];
+            trans.strb = new[data_length];
+            trans.user = new[trans.len+1];
+            for(int i=0;i<data_length;i=i+1) begin
+                trans.data[i] = pack.data[offset+i];
+                trans.strb[i] = 1'b1;
+                //$display("ptr %d and s+j %d with data %h",i,offset+i,pack.data[offset+i]);
+            end
+            for(int i=0;i<=trans.len;i+=1) begin
+                trans.user[i] = pack.user[i];
+            end
+
+            //repo b
+            mbx_r.put(trans);
+            
+            //ostmsg_r.get(trans.id);
+            mbx_p1r.get(pack);
+        end
+        join_none
+    endtask
 
 
 endclass:AxiDriverMaster

@@ -256,6 +256,8 @@ class AxiDriverSlave;
             mbx_b.peek(trans);
             vif.bvalid <= 1'b1;
             vif.bresp  <= trans.resp[0];
+            vif.bid    <= trans.id;
+            vif.buser  <= trans.buser;
             //$display("transresp0 %b",trans.resp[0]);
             do @vif.aclk; while(!(vif.bvalid && vif.bready));
             mbx_b.get(trans);

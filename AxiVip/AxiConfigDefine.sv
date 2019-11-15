@@ -1,3 +1,6 @@
+`define AXI_IF_ID_WIDTH 32
+`define AXI_IF_USER_WIDTH 128
+
 `define AXI_IF_AWID_WIDTH   32
 `define AXI_IF_AWADDR_WIDTH 64
 `define AXI_IF_AWLEN_WIDTH  4

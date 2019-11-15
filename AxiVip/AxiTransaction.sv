@@ -36,6 +36,7 @@ class AxiTransaction;
     rand bit [3:0]      qos;
     rand bit [3:0]      region;
     rand bit [127:0]    auser;
+    rand bit [127:0]    buser;
 
     //Data channel parameter
     rand bit [7:0]      data[];
@@ -152,6 +153,10 @@ class AxiTransaction;
     function set_support_value();
         size_num = 2**size;
 
+    endfunction
+
+    function copy_to(output AxiTransaction trans);
+        trans = new this;
     endfunction
 
 endclass:AxiTransaction

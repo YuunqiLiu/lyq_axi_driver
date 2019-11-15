@@ -110,7 +110,7 @@ module top();
     end
 
     initial begin
-        #200;
+        #20000;
         $finish;
     end
 
