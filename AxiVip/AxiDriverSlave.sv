@@ -27,8 +27,11 @@ class AxiDriverSlave;
 
     AxiConfig                       cfg;
     AxiTransaction                  trans;
-    RichMailbox                     mbx_aw,mbx_ar,mbx_w,mbx_b,mbx_r,mbx_otdw,mbx_otdr;
+    AxiOtdMessage                   otdmsg_aw,otdmsg_w,otdmsg_r;
+    RichMailbox                     mbx_aw,mbx_ar,mbx_w,mbx_b,mbx_r;
     RichMailbox                     mbx_write;
+    RichMailbox                     mbx_p1r;//Type AxiTransaction
+    AxiTransMailboxIBK              mbxibid_waitr;
     virtual AxiInterfaceUnit.slave  vif;
 
     function new(AxiConfig cfg,virtual AxiInterfaceUnit.slave vif);
@@ -45,14 +48,17 @@ class AxiDriverSlave;
     function set_config(AxiConfig cfg);
         this.cfg = cfg;
 
-        this.mbx_aw = new(cfg.driver_slave_send_fifo_depth);
-        this.mbx_ar = new(cfg.driver_slave_send_fifo_depth);
-        this.mbx_w  = new(cfg.driver_slave_send_fifo_depth);
-        this.mbx_r  = new(cfg.driver_slave_recv_fifo_depth);
-        this.mbx_b  = new(cfg.driver_slave_recv_fifo_depth);
-        this.mbx_otdr = new(cfg.driver_slave_read_otd_depth);
-        this.mbx_otdw = new(cfg.driver_slave_write_otd_depth);
-        this.mbx_write = new();
+        this.mbx_aw         = new(cfg.slave_buffer.aw_depth);
+        this.mbx_ar         = new(cfg.slave_buffer.ar_depth);
+        this.mbx_w          = new(cfg.slave_buffer.w_depth);
+        this.mbx_r          = new(cfg.slave_buffer.r_depth);
+        this.mbx_b          = new(cfg.slave_buffer.b_depth);
+        this.mbx_write      = new();
+        this.mbx_p1r        = new(1);
+        this.otdmsg_aw      = new(cfg.slave_write_otd);
+        this.otdmsg_w       = new(cfg.slave_write_otd);
+        this.otdmsg_r       = new(cfg.slave_read_otd);
+        this.mbxibid_waitr  = new;
     endfunction
 
     task initialize();
@@ -67,8 +73,8 @@ class AxiDriverSlave;
             recv_w();
             send_b();
             send_r();
+            process_r();
             write_merge_handler();
-
         join_none
     endtask
 
@@ -82,10 +88,22 @@ class AxiDriverSlave;
     endtask
 
     task send_trans(input AxiTransaction trans);
-        automatic AxiTransaction trans_c;
-        trans_c = new trans;
-        if(trans_c.xact_type == AxiTransaction::WRITE)  mbx_b.put(trans_c);
-        else                                            mbx_r.put(trans_c);
+        if(trans.xact_type == AxiTransaction::WRITE)    send_write_trans(trans);
+        else                                            send_read_trans(trans);
+    endtask
+
+    task send_write_trans(input AxiTransaction trans);
+        AxiTransaction trans_w;
+        if(trans.xact_type != AxiTransaction::WRITE) $finish;
+        trans.copy_to(trans_w);
+        mbx_b.put(trans_w);
+    endtask
+
+    task send_read_trans(input AxiTransaction trans);
+        AxiTransaction trans_r;
+        if(trans.xact_type != AxiTransaction::READ) $finish;
+        trans.copy_to(trans_r);
+        mbx_r.put(trans_r);
     endtask
 
     task write_merge_handler();
@@ -137,7 +155,8 @@ class AxiDriverSlave;
         fork
         if(cfg.axi_driver_debug_enable) $display("AxiDriverSlave: recv_aw run.");
         forever begin
-            if(!mbx_aw.full()) begin
+            if(!mbx_aw.full() && !otdmsg_aw.full(0)) begin
+                otdmsg_aw.put(0);
                 vif.awready <= 1;
                 do @vif.aclk; while(!(vif.awvalid && vif.awready));
                 trans = new(cfg);
@@ -153,6 +172,11 @@ class AxiDriverSlave;
                 trans.region    = vif.awregion;
                 trans.auser     = vif.awuser;
                 trans.resp      = new[1];
+                while(otdmsg_w.full(trans.id)) begin
+                    vif.awready <= 0; 
+                    @vif.aclk;
+                end
+                //otdmsg_aw.put(trans.id);
                 mbx_aw.put(trans);
                 //trans.display();
             end
@@ -169,7 +193,8 @@ class AxiDriverSlave;
         fork
         if(cfg.axi_driver_debug_enable) $display("AxiDriverSlave: recv_ar run.");
         forever begin
-            if(!mbx_ar.full()) begin
+            if(!mbx_ar.full() && !otdmsg_r.full(0)) begin
+                otdmsg_r.put(0);
                 //if(cfg.axi_driver_debug_enable) $display("AxiDriverSlave: Start to recv a READ transaction from interface.");
                 vif.arready <= 1;
                 do begin
@@ -194,6 +219,7 @@ class AxiDriverSlave;
                 trans.size_num  = 2**trans.size;
                 recv_trans_init(trans);
                 mbx_ar.put(trans);
+                mbxibid_waitr.put(trans,trans.id);
                 //if(cfg.axi_driver_debug_enable) $display("AxiDriverSlave: send_ar run.");
             end
             else begin
@@ -215,7 +241,8 @@ class AxiDriverSlave;
         fork
         if(cfg.axi_driver_debug_enable) $display("AxiDriverSlave: recv_w run.");
         forever begin
-            if(!mbx_w.full()) begin
+            if(!mbx_w.full() && !otdmsg_w.full(0)) begin
+                otdmsg_w.put(0);
                 data_ptr = 0;
                 handshake_ptr = 0;
                 pack = new();
@@ -261,6 +288,8 @@ class AxiDriverSlave;
             //$display("transresp0 %b",trans.resp[0]);
             do @vif.aclk; while(!(vif.bvalid && vif.bready));
             mbx_b.get(trans);
+            otdmsg_w.get(0);
+            otdmsg_aw.get(0);
         end
         else begin
             vif.bvalid <= 1'b0;
@@ -278,8 +307,8 @@ class AxiDriverSlave;
 
         fork
         forever begin
-            if(!mbx_r.empty()) begin
-                mbx_r.peek(trans);
+            if(!mbx_p1r.empty()) begin
+                mbx_p1r.peek(trans);
 
                 current_ptr     = 0;
                 current_addr    = trans.addr;
@@ -309,7 +338,8 @@ class AxiDriverSlave;
                     do @vif.aclk; while(!(vif.rvalid && vif.rready));
                 end
 
-                mbx_r.get(trans);
+                mbx_p1r.get(trans);
+                otdmsg_r.get(0);
             end
             else begin
                 vif.rvalid <= 1'b0;
@@ -319,7 +349,17 @@ class AxiDriverSlave;
         join_none
     endtask
 
-
+    task process_r();
+        AxiTransaction trans;
+        fork
+        forever begin
+            mbx_r.get(trans);
+            if(mbxibid_waitr.empty(trans.id)) $finish;
+            //wait for add check
+            mbx_p1r.put(trans);
+        end
+        join_none
+    endtask
 
 
 

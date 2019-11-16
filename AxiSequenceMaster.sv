@@ -26,8 +26,10 @@ class AxiSequenceMaster;
 
     task run();
         fork 
-            read_handler();
-            write_handler();
+            write_recv_handler();
+            read_recv_handler();
+            read_send_handler();
+            write_send_handler();
         join_none
         //trans.resp[0] = 2'b01;
         //trans.display();
@@ -35,7 +37,7 @@ class AxiSequenceMaster;
     endtask
 
 
-    task read_handler();
+    task read_send_handler();
         AxiTransaction trans;
         int num = 5;
         for(int i=0;i<num;i=i+1) begin
@@ -47,14 +49,13 @@ class AxiSequenceMaster;
                 trans.xact_type     == AxiTransaction::READ;
             };
             agent.send_trans(trans);
-            agent.recv_read_trans(trans);
-            $display("Seq Master:send read %d and recv resp done.",i);
+            $display("Seq Master:send read trans with id %d.",trans.id);
             //trans.display();
         end
     endtask
 
 
-    task write_handler();
+    task write_send_handler();
         AxiTransaction trans;
         int num = 5;
         for(int i=0;i<num;i=i+1) begin
@@ -66,10 +67,30 @@ class AxiSequenceMaster;
                 trans.xact_type     == AxiTransaction::WRITE;
             };
             agent.send_trans(trans);
-            agent.recv_write_trans(trans);
-            $display("Seq Master:send write %d and recv resp done.",i);
+            $display("Seq Master:send write trans with id %d.",trans.id);
             //trans.display();
         end
+    endtask
+
+    task read_recv_handler();
+        AxiTransaction trans;
+        fork
+        forever begin
+            agent.recv_read_trans(trans);
+            $display("Seq Master:recv read resp with id %d.",trans.id);
+        end
+        join_none
+    endtask
+
+
+    task write_recv_handler();
+        AxiTransaction trans;
+        fork
+        forever begin
+            agent.recv_write_trans(trans);
+            $display("Seq Master:recv write resp with id %d.",trans.id);
+        end
+        join_none
     endtask
 
 endclass:AxiSequenceMaster

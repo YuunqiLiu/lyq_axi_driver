@@ -1,6 +1,27 @@
 `timescale 1ns/1ps
 
+class AxiConfigBuffer;
+
+    int aw_depth  = 1000;
+    int w_depth   = 1000;
+    int b_depth   = 1000;
+    int ar_depth  = 1000;
+    int r_depth   = 1000;
+
+endclass
+
+
+class AxiConfigOtd;
+
+    int total           = 10;
+    int trans_per_id    = 10;
+    int id_num          = 10;
+
+endclass
+
 class AxiConfig;
+
+
 
     typedef enum bit {READ,WRITE} xact_type_e;
 
@@ -12,21 +33,12 @@ class AxiConfig;
     int monitor_num = 1;
 
     //AXI ip spec
-    int driver_master_write_otd_total        = 10;
-    int driver_master_write_otd_trans_per_id = 10;
-    int driver_master_write_otd_id_num       = 10;
-
-
-
-    int driver_master_write_otd_depth = 1;
-    int driver_master_read_otd_depth = 1;
-    int driver_master_recv_fifo_depth = 1;
-    int driver_master_send_fifo_depth = 1;
-
-    int driver_slave_write_otd_depth = 1;
-    int driver_slave_read_otd_depth = 1;
-    int driver_slave_recv_fifo_depth = 1;
-    int driver_slave_send_fifo_depth = 1;
+    AxiConfigOtd    master_write_otd;
+    AxiConfigOtd    master_read_otd;
+    AxiConfigOtd    slave_write_otd;
+    AxiConfigOtd    slave_read_otd;
+    AxiConfigBuffer master_buffer;
+    AxiConfigBuffer slave_buffer;
 
 
     //AXI interface param config
@@ -51,6 +63,20 @@ class AxiConfig;
     int rdata_width = data_width;
     int strb_width = data_width/8;
     int wstrb_width = wdata_width/8;
+
+    function new();
+        master_write_otd = new;
+        master_read_otd  = new;
+        slave_write_otd  = new;
+        slave_read_otd   = new;
+        master_buffer    = new;
+        slave_buffer     = new;
+        
+        slave_write_otd.trans_per_id = 65535;
+        slave_write_otd.id_num       = 65535;
+        slave_read_otd.trans_per_id  = 65535;
+        slave_read_otd.id_num        = 65535;
+    endfunction
     
     function cfg_expand();
         awid_width  = id_width;

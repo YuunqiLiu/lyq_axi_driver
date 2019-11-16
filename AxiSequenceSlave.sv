@@ -27,8 +27,39 @@ class AxiSequenceSlave;
 
 
     task run();
-        write_handler();
-        read_handler();
+        write_handler_oo();
+        read_handler_oo();
+    endtask
+
+    task write_handler_oo();
+        AxiTransaction trans[];
+        trans = new[5];
+        agent.recv_write_trans(trans[0]);
+            trans[0].resp[0] = 2'b11;
+        agent.recv_write_trans(trans[1]);
+        agent.recv_write_trans(trans[2]);
+        agent.recv_write_trans(trans[3]);
+        agent.recv_write_trans(trans[4]);
+        agent.send_trans(trans[4]);
+        agent.send_trans(trans[3]);
+        agent.send_trans(trans[2]);
+        agent.send_trans(trans[1]);
+        agent.send_trans(trans[0]);
+    endtask
+
+    task read_handler_oo();
+        AxiTransaction trans[];
+        trans = new[5];
+        agent.recv_read_trans(trans[0]);
+        agent.recv_read_trans(trans[1]);
+        agent.recv_read_trans(trans[2]);
+        agent.recv_read_trans(trans[3]);
+        agent.recv_read_trans(trans[4]);
+        agent.send_trans(trans[4]);
+        agent.send_trans(trans[3]);
+        agent.send_trans(trans[2]);
+        agent.send_trans(trans[1]);
+        agent.send_trans(trans[0]);
     endtask
 
     task write_handler();

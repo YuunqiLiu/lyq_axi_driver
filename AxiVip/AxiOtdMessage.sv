@@ -18,10 +18,10 @@ class AxiOtdMessage;
     int limit_total;
     int limit_id_num;
 
-    function new(input AxiConfig cfg);
-        limit_total         = cfg.driver_master_write_otd_total        ;
-        limit_per_id_trans  = cfg.driver_master_write_otd_trans_per_id ;
-        limit_id_num        = cfg.driver_master_write_otd_id_num       ;
+    function new(input AxiConfigOtd cfg);
+        limit_total         = cfg.total        ;
+        limit_per_id_trans  = cfg.trans_per_id ;
+        limit_id_num        = cfg.id_num       ;
         CntTotal            = 0;
         CntActiveID         = 0;
     endfunction
@@ -29,6 +29,16 @@ class AxiOtdMessage;
     function exists(input bit[`AXI_IF_ID_WIDTH-1:0] i);
         if(CntIBID.exists(i) && CntIBID[i] >0)  exists = 1;
         else                                    exists = 0;
+    endfunction
+
+    function full(input bit[`AXI_IF_ID_WIDTH-1:0] i);
+        if(CntTotal < limit_total)
+            if(exists(i))
+                if(CntIBID[i] < limit_per_id_trans) full = 0;
+                else                                full = 1;
+            else if(CntActiveID < limit_id_num)     full = 0;
+            else                                    full = 1;
+        else                                        full = 1;
     endfunction
 
 

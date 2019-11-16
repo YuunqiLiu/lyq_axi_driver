@@ -55,7 +55,7 @@ class AxiDriverMaster;
     AxiTransMailboxIBK              mbxibid_waitb,mbxibid_waitr;
     RichMailbox                     mbx_p1b;//Type AxiBChannelDataPack
     RichMailbox                     mbx_p1r;//Type AxiRChannelDataPack
-    RichMailbox                     mbx_aw,mbx_w,mbx_ar,mbx_r,mbx_b,mbx_otdw,mbx_otdr;//Type AxiTransaction
+    RichMailbox                     mbx_aw,mbx_w,mbx_ar,mbx_r,mbx_b;//Type AxiTransaction
     virtual AxiInterfaceUnit.master vif;
 
     function new(input AxiConfig cfg,virtual AxiInterfaceUnit.master vif);
@@ -65,19 +65,17 @@ class AxiDriverMaster;
 
     function set_config(input AxiConfig cfg);
         this.cfg = cfg;
-        this.mbx_aw = new(cfg.driver_master_send_fifo_depth);
-        this.mbx_ar = new(cfg.driver_master_send_fifo_depth);
-        this.mbx_w  = new(cfg.driver_master_send_fifo_depth);
-        this.mbx_r  = new(cfg.driver_master_recv_fifo_depth);
-        this.mbx_b  = new(cfg.driver_master_recv_fifo_depth);
-        this.mbx_otdr = new(cfg.driver_master_read_otd_depth);
-        this.mbx_otdw = new(cfg.driver_master_write_otd_depth);
-        this.mbx_p1b = new(1);
-        this.mbx_p1r = new(1);
-        this.otdmsg_r = new(cfg);
-        this.otdmsg_w = new(cfg);
-        this.mbxibid_waitb = new;
-        this.mbxibid_waitr = new;
+        this.mbx_aw         = new(cfg.master_buffer.aw_depth);
+        this.mbx_ar         = new(cfg.master_buffer.ar_depth);
+        this.mbx_w          = new(cfg.master_buffer.w_depth);
+        this.mbx_r          = new(cfg.master_buffer.r_depth);
+        this.mbx_b          = new(cfg.master_buffer.b_depth);
+        this.mbx_p1b        = new(1);
+        this.mbx_p1r        = new(1);
+        this.otdmsg_r       = new(cfg.slave_read_otd);
+        this.otdmsg_w       = new(cfg.slave_write_otd);
+        this.mbxibid_waitb  = new;
+        this.mbxibid_waitr  = new;
     endfunction
 
     task initialize();
