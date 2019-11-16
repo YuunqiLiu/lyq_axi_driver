@@ -22,6 +22,8 @@ class AxiOtdMessage;
         limit_total         = cfg.driver_master_write_otd_total        ;
         limit_per_id_trans  = cfg.driver_master_write_otd_trans_per_id ;
         limit_id_num        = cfg.driver_master_write_otd_id_num       ;
+        CntTotal            = 0;
+        CntActiveID         = 0;
     endfunction
 
     function exists(input bit[`AXI_IF_ID_WIDTH-1:0] i);
@@ -31,8 +33,11 @@ class AxiOtdMessage;
 
 
     task put(input bit[`AXI_IF_ID_WIDTH-1:0] i);
+
+        wait((CntTotal < limit_total));
+
         if(CntIBID.exists(i)) begin
-            wait( (CntIBID[i] < limit_per_id_trans) && (CntTotal < limit_total) );
+            wait(CntIBID[i] < limit_per_id_trans);
             CntIBID[i]   = CntIBID[i] + 1;
         end
         else begin
@@ -41,17 +46,18 @@ class AxiOtdMessage;
             CntActiveID =CntActiveID + 1; 
         end
         CntTotal    = CntTotal   + 1;
+        //$display("otdm put with id %d",i);
     endtask
 
 
     task get(input bit[`AXI_IF_ID_WIDTH-1:0] i);
+        //$display("cnt total %d cntibid %d with get id",CntIBID[i],CntTotal,i);
         wait( (CntIBID[i] > 0) && (CntTotal > 0) );
         CntIBID[i] = CntIBID[i] - 1;
         CntTotal   = CntTotal   - 1;
 
         if(CntIBID[i] == 0) begin
             CntIBID.delete(i);
-            CntTotal    = CntTotal - 1;
             CntActiveID = CntActiveID -1;
         end
     endtask

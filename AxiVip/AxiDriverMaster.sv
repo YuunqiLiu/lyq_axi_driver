@@ -115,6 +115,8 @@ class AxiDriverMaster;
         mbx_r.get(trans);
         if(!otdmsg_r.exists(trans.id)) $finish;
         otdmsg_r.get(trans.id);
+
+        //$display("recv read trans run");
     endtask
 
     task recv_write_trans(output AxiTransaction trans);
@@ -204,16 +206,16 @@ class AxiDriverMaster;
     endtask
 
     task send_w();
-        AxiTransaction trans;
-        int             current_ptr;
-        bit [63:0]      current_addr;
-        int             up_boundary;
-        int             current_num;
-        int             size;
-        int             sel_byte;
-        bit [127:0][7:0] data;
-        bit [127:0]     strb;
-        int            handshake_cnt;
+        AxiTransaction      trans;
+        int                 current_ptr;
+        bit [63:0]          current_addr;
+        int                 up_boundary;
+        int                 current_num;
+        int                 size;
+        int                 sel_byte;
+        bit [127:0][7:0]    data;
+        bit [127:0]         strb;
+        int                 handshake_cnt;
 
         fork
         if(cfg.axi_driver_debug_enable) $display("AxiDriverMaster: send_w run.");
@@ -318,7 +320,7 @@ class AxiDriverMaster;
                 //$display("recv_r put result to mbx");
                 //read_merge(trans_recv,pack,trans_send);
                 mbx_p1r.put(pack);
-                //mbx_r.put(pack);
+                //$display("receive a read pack.");
             end
             else begin
                 vif.rready <= 0;
@@ -335,7 +337,6 @@ class AxiDriverMaster;
         //        do @vif.aclk; while(!(vif.rvalid && vif.rready));
         //        mbx_otdr.get(trans);
         //        trans.resp = vif.rresp;
-        //        mbx_r.put(trans);
         //    end 
         //    else begin
         //        vif.rready <= 0;
@@ -398,6 +399,8 @@ class AxiDriverMaster;
 
             //repo b
             mbx_r.put(trans);
+            //$display("process a read pack.");
+            
             
             //ostmsg_r.get(trans.id);
             mbx_p1r.get(pack);
@@ -408,13 +411,3 @@ class AxiDriverMaster;
 
 endclass:AxiDriverMaster
 
-
-
-
-
-    //task send_write(AxiTransaction trans);
-    //    fork 
-    //        send_aw(trans);
-    //        send_w(trans);
-    //    join
-    //endtask
