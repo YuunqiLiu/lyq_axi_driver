@@ -157,12 +157,12 @@ class AxiDriverMaster;
                 vif.awqos   <= trans.qos;
                 vif.awregion<= trans.region;
                 vif.awuser  <= trans.auser;
-                do @vif.aclk; while(!(vif.awvalid && vif.awready));
+                do @(posedge vif.aclk); while(!(vif.awvalid && vif.awready));
                 mbx_aw.get(trans);
             end
             else begin
                 vif.awvalid <= 1'b0;
-                @vif.aclk;
+                @(posedge vif.aclk);
             end
         end
         join_none
@@ -189,7 +189,7 @@ class AxiDriverMaster;
                 vif.arregion<= trans.region;
                 vif.aruser  <= trans.auser;
                 do begin
-                    @vif.aclk;
+                    @(posedge vif.aclk);
                     //if(cfg.axi_driver_debug_enable) $display("AxiDriverMaster: wait handshake valid/ready %d/%d.",vif.arvalid,vif.arready);
                 end while(!(vif.arvalid && vif.arready));
                 mbx_ar.get(trans);
@@ -197,7 +197,7 @@ class AxiDriverMaster;
             end
             else begin
                 vif.arvalid <= 1'b0;
-                @vif.aclk;
+                @(posedge vif.aclk);
             end
         end
         join_none
@@ -253,7 +253,7 @@ class AxiDriverMaster;
                     //current_ptr     += current_num;
                     current_addr    += current_num;
                     handshake_cnt   += 1;
-                    do @vif.aclk; while(!(vif.wvalid && vif.wready));
+                    do @(posedge vif.aclk); while(!(vif.wvalid && vif.wready));
 
                 end while(current_addr < trans.addr +trans.data.size());
                 mbx_w.get(trans);
@@ -261,7 +261,7 @@ class AxiDriverMaster;
             else begin
                 vif.wvalid <= 1'b0;
                 vif.wlast <= 1'b0;
-                @vif.aclk;
+                @(posedge vif.aclk);
             end
         end
         join_none
@@ -275,7 +275,7 @@ class AxiDriverMaster;
             if(!mbx_p1b.full()) begin
                 pack = new;
                 vif.bready <= 1'b1;
-                do @vif.aclk; while(!(vif.bvalid && vif.bready));
+                do @(posedge vif.aclk); while(!(vif.bvalid && vif.bready));
                 pack.resp = vif.bresp;
                 pack.user = vif.buser;
                 pack.id   = vif.bid;
@@ -283,7 +283,7 @@ class AxiDriverMaster;
             end
             else begin
                 vif.bready <= 1'b0;
-                @vif.aclk;
+                @(posedge vif.aclk);
             end
         end
         join_none
@@ -302,7 +302,7 @@ class AxiDriverMaster;
                 pack = new();
                 do begin
                     vif.rready <= 1'b1;
-                    do @vif.aclk; while(!(vif.rvalid && vif.rready));
+                    do @(posedge vif.aclk); while(!(vif.rvalid && vif.rready));
                     //Data read
                     data = vif.rdata;
                     for(int i=0;i<cfg.strb_width;i=i+1) begin
@@ -322,7 +322,7 @@ class AxiDriverMaster;
             end
             else begin
                 vif.rready <= 0;
-                @vif.aclk;
+                @(posedge vif.aclk);
             end
         end
         join_none
@@ -332,13 +332,13 @@ class AxiDriverMaster;
         //forever begin
         //    if(mbx_otdr.num()!=0) begin
         //        vif.rready <= 1;
-        //        do @vif.aclk; while(!(vif.rvalid && vif.rready));
+        //        do @(posedge vif.aclk); while(!(vif.rvalid && vif.rready));
         //        mbx_otdr.get(trans);
         //        trans.resp = vif.rresp;
         //    end 
         //    else begin
         //        vif.rready <= 0;
-        //        @vif.aclk;
+        //        @(posedge vif.aclk);
         //    end
         //end
         //join_none

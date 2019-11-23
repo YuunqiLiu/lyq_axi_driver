@@ -158,7 +158,7 @@ class AxiDriverSlave;
             if(!mbx_aw.full() && !otdmsg_aw.full(0)) begin
                 otdmsg_aw.put(0);
                 vif.awready <= 1;
-                do @vif.aclk; while(!(vif.awvalid && vif.awready));
+                do @(posedge vif.aclk); while(!(vif.awvalid && vif.awready));
                 trans = new(cfg);
                 trans.xact_type = AxiTransaction::WRITE;
                 trans.id        = vif.awid;
@@ -174,7 +174,7 @@ class AxiDriverSlave;
                 trans.resp      = new[1];
                 while(otdmsg_w.full(trans.id)) begin
                     vif.awready <= 0; 
-                    @vif.aclk;
+                    @(posedge vif.aclk);
                 end
                 //otdmsg_aw.put(trans.id);
                 mbx_aw.put(trans);
@@ -182,7 +182,7 @@ class AxiDriverSlave;
             end
             else begin
                 vif.awready <= 0;
-                @vif.aclk;
+                @(posedge vif.aclk);
             end
         end
         join_none
@@ -198,7 +198,7 @@ class AxiDriverSlave;
                 //if(cfg.axi_driver_debug_enable) $display("AxiDriverSlave: Start to recv a READ transaction from interface.");
                 vif.arready <= 1;
                 do begin
-                    @vif.aclk; 
+                    @(posedge vif.aclk); 
                     //if(cfg.axi_driver_debug_enable) $display("AxiDriverSlave: wait handshake valid/ready %d/%d.",vif.arvalid,vif.arready);
                 end while(!(vif.arvalid && vif.arready));
                 trans = new(cfg);
@@ -225,7 +225,7 @@ class AxiDriverSlave;
             else begin
                 //if(cfg.axi_driver_debug_enable) $display("AxiDriverSlave: send_ar run.");
                 vif.arready <= 0;
-                @vif.aclk; 
+                @(posedge vif.aclk); 
             end
         end
         join_none
@@ -248,7 +248,7 @@ class AxiDriverSlave;
                 pack = new();
                 do begin
                     vif.wready <= 1;
-                    do @vif.aclk; while(!(vif.wvalid && vif.wready));
+                    do @(posedge vif.aclk); while(!(vif.wvalid && vif.wready));
                     data_copy = vif.wdata;
                     strb_copy = vif.wstrb;
                     //$display("data_cp_all %h",data_copy);
@@ -267,7 +267,7 @@ class AxiDriverSlave;
             end
             else begin
                 vif.wready <= 0;
-                @vif.aclk; 
+                @(posedge vif.aclk); 
             end
         end
         join_none
@@ -286,14 +286,14 @@ class AxiDriverSlave;
             vif.bid    <= trans.id;
             vif.buser  <= trans.buser;
             //$display("transresp0 %b",trans.resp[0]);
-            do @vif.aclk; while(!(vif.bvalid && vif.bready));
+            do @(posedge vif.aclk); while(!(vif.bvalid && vif.bready));
             mbx_b.get(trans);
             otdmsg_w.get(0);
             otdmsg_aw.get(0);
         end
         else begin
             vif.bvalid <= 1'b0;
-            @vif.aclk;
+            @(posedge vif.aclk);
         end
     end
     join_none
@@ -335,7 +335,7 @@ class AxiDriverSlave;
                     vif.ruser   <= trans.user[i];
                     vif.rresp   <= trans.resp[i];
                     vif.rlast   <= (i == trans.len) ? 1'b1 : 1'b0;
-                    do @vif.aclk; while(!(vif.rvalid && vif.rready));
+                    do @(posedge vif.aclk); while(!(vif.rvalid && vif.rready));
                 end
 
                 mbx_p1r.get(trans);
@@ -343,7 +343,7 @@ class AxiDriverSlave;
             end
             else begin
                 vif.rvalid <= 1'b0;
-                @vif.aclk;
+                @(posedge vif.aclk);
             end
         end
         join_none
