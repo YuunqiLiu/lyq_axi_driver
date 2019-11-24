@@ -15,18 +15,21 @@
     `include "RichMailbox.sv"
 `endif
 
-class AxiWChannelDataPack;
+`ifndef AXIWCHANNELDATAPACK
+    `define AXIWCHANNELDATAPACK
+    `include "AxiWChannelDataPack.sv"
+`endif
 
-    bit [7:0]       data[4095:0];
-    bit             strb[4095:0];
-    bit [127:0]     user[255:0];
-
-endclass
+`ifndef AXIDRIVERTOOL
+    `define AXIDRIVERTOOL
+    `include "AxiDriverTool.sv"
+`endif
 
 class AxiDriverSlave;
 
     AxiConfig                       cfg;
     AxiTransaction                  trans;
+    AxiDriverTool                   tool;
     AxiOtdMessage                   otdmsg_aw,otdmsg_w,otdmsg_r;
     RichMailbox                     mbx_aw,mbx_ar,mbx_w,mbx_b,mbx_r;
     RichMailbox                     mbx_write;
@@ -59,6 +62,7 @@ class AxiDriverSlave;
         this.otdmsg_w       = new(cfg.slave_write_otd);
         this.otdmsg_r       = new(cfg.slave_read_otd);
         this.mbxibid_waitr  = new;
+        this.tool           = new;
     endfunction
 
     task initialize();
@@ -141,14 +145,7 @@ class AxiDriverSlave;
         end
     endtask
 
-    function recv_trans_init(input AxiTransaction trans);
-        int offset;
-        offset = trans.addr % (2**trans.size);
-        trans.data_length = (trans.len+1)*cfg.strb_width-offset;
-        trans.data = new[trans.data_length];
-        trans.strb = new[trans.data_length];
-        trans.user = new[trans.len+1];
-    endfunction
+
 
     task recv_aw();
         AxiTransaction trans;
@@ -217,7 +214,7 @@ class AxiDriverSlave;
                 trans.resp      = new[trans.len+1];
 
                 trans.size_num  = 2**trans.size;
-                recv_trans_init(trans);
+                tool.recv_trans_init(trans,cfg);
                 mbx_ar.put(trans);
                 mbxibid_waitr.put(trans,trans.id);
                 //if(cfg.axi_driver_debug_enable) $display("AxiDriverSlave: send_ar run.");

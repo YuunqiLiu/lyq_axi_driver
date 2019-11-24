@@ -1,3 +1,5 @@
 /csrc
-/simv.daidir
+/run/*
+/DVEfiles
+/inter.vpd
 /ucli.key

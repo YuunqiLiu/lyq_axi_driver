@@ -4,9 +4,11 @@
     `include "AxiInterface.sv"
 `endif
 
+
 `include "AxiVipPkg.sv"
 `include "AxiSequenceMaster.sv"
 `include "AxiSequenceSlave.sv"
+`include "Scoreboard.sv"
 
 module top();
 
@@ -19,6 +21,7 @@ module top();
 
     AxiSequenceMaster mstseq;
     AxiSequenceSlave  slvseq;
+    Scoreboard        scb;
 
     reg clk;
 
@@ -88,21 +91,23 @@ module top();
     assign axi_if.master[0].rvalid  = axi_if.slave[0].rvalid    ;
     assign axi_if.slave[0].rready   = axi_if.master[0].rready   ;
 
-    initial begin
-        clk = 0;
-        forever #1 clk = ~clk;
-    end
+
 
     initial begin
         cfg = new();
         vip = new(cfg,axi_if);
-        mstseq = new;
-        slvseq = new;
+        mstseq  = new;
+        slvseq  = new;
+        scb     = new;
         
         mstseq.get_agent(vip.master[0]);
         slvseq.get_agent(vip.slave[0]);
+        scb.get_master_monitor(vip.master[0].monitor);
+        scb.get_slave_monitor(vip.slave[0].monitor);
+
 
         vip.run();
+        scb.run();
         mstseq.run();
         slvseq.run();
 
@@ -110,11 +115,19 @@ module top();
     end
 
     initial begin
+
+    end
+
+    initial begin
         #20000;
+        $vcdpluson;
         $finish;
     end
 
-
+    initial begin
+        clk = 1;
+        forever #1 clk = ~clk;
+    end
 
 endmodule
 
